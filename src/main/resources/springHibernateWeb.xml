@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd 
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd 
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+<context:annotation-config/> 
+<context:component-scan base-package="com.spring"></context:component-scan> 
+
+ <context:property-placeholder location="classpath:jdbc.properties" />
+<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource"
+	destroy-method="close">
+	<property name="driverClassName" value="${db.driver}" />
+	<property name="url" value="${db.url}" />
+	<property name="username" value="${db.username}" />
+	<property name="password" value="${db.password}" />
+</bean>
+
+<bean id="sessionFactory"
+	class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+	<property name="dataSource">
+		<ref bean="dataSource" />
+	</property>
+	<property name="hibernateProperties">
+		<props>
+			<!-- MySQL的方言 -->
+			<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop>
+			<prop key="javax.persistence.validation.mode">none</prop>
+			<!-- 必要时在数据库新建所有表格 -->
+			<prop key="hibernate.show_sql">true</prop>
+			<!-- 配置current session的上下文环境，方便我们调用sessionFactory获取当前线程统一个session对象 -->
+			<prop key="current_session_context_class">thread</prop>
+			<!-- 用更漂亮的格式显示sql语句 -->
+			<prop key="hibernate.format_sql">true</prop>
+		</props>
+	</property>
+	<property name="packagesToScan" value="com.spring.hibernate.tables" />
+</bean>
+<!-- 配置事物管理器 -->
+<bean id="transactionManager"
+	class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+	<property name="sessionFactory">
+		<ref bean="sessionFactory" />
+	</property>
+</bean>
+<!-- 配置基于注解的声明式事物
+	   默认使用注解来管理事物行为 -->
+<tx:annotation-driven transaction-manager="transactionManager"/>
+
+<!-- 创建SqlSessionFactory，同时指定数据源 -->  
+<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">  
+   <property name="dataSource" ref="dataSource" />
+   <!-- 指定sqlMapConfig总配置文件，订制的environment在spring容器中不在生效 -->  
+   <property  name="configLocation"  value="classpath:mybatis.xml"/>
+<!--    指定实体类映射文件，可以指定同时指定某一包以及子包下面的所有配置文件，mapperLocations和configLocation 有一个即可，当需要为实体类指定别名时，可指定configLocation属性，再在mybatis总配置文件中采用mapper引入实体类映射文件  --></bean>  
+<bean id="sqlSession"  class="org.mybatis.spring.SqlSessionTemplate">   
+    <constructor-arg index="0" ref="sqlSessionFactory" />   
+</bean> 
+
+</beans>
